@@ -1,57 +1,73 @@
-const ctx = document.getElementById("currentChart").getContext("2d");
+const powerValue = document.getElementById("powerValue");
+const energyValue = document.getElementById("energyValue");
+const wasteValue = document.getElementById("wasteValue");
 
-let labels = [];
-let dataPoints = [];
+let totalEnergy = 0;
+let wasteEnergy = 0;
 
-const currentChart = new Chart(ctx, {
-    type: "line",
+const powerChart = new Chart(document.getElementById("powerChart"), {
+    type: 'line',
     data: {
-        labels: labels,
+        labels: [],
         datasets: [{
-            label: "Current (A)",
-            data: dataPoints,
-            borderColor: "#3aa0c8",
-            fill: false,
-            tension: 0.2
+            label: 'Power (W)',
+            data: [],
+            borderColor: '#3aa0c8',
+            fill: false
         }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
     }
 });
 
-function fetchCurrentData() {
-    fetch("http://localhost:5000/api/current")
-        .then(response => response.json())
+const wasteChart = new Chart(document.getElementById("wasteChart"), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Wastage (W)',
+            data: [],
+            borderColor: 'red',
+            fill: false
+        }]
+    }
+});
+
+function fetchData() {
+
+    fetch("http://localhost:5000/api/data")
+        .then(res => res.json())
         .then(data => {
+
+            const power = data.power;
             const current = data.current;
+            const voltage = data.voltage;
 
-            // Update big number
-            document.getElementById("currentValue").innerText = current.toFixed(2);
+            powerValue.innerText = power.toFixed(2);
 
-            // Update chart
-            const now = new Date().toLocaleTimeString();
+            // Energy Calculation (simplified)
+            totalEnergy += power / 3600000;
+            energyValue.innerText = totalEnergy.toFixed(4);
 
-            labels.push(now);
-            dataPoints.push(current);
+            // Waste Logic
+            let waste = 0;
 
-            if (labels.length > 20) {
-                labels.shift();
-                dataPoints.shift();
+            if(power < 10 && current > 0) {
+                waste = power;
+                wasteEnergy += waste / 3600000;
             }
 
-            currentChart.update();
-        })
-        .catch(error => console.error("Error:", error));
+            wasteValue.innerText = waste.toFixed(2);
+
+            const time = new Date().toLocaleTimeString();
+
+            powerChart.data.labels.push(time);
+            powerChart.data.datasets[0].data.push(power);
+            powerChart.update();
+
+            wasteChart.data.labels.push(time);
+            wasteChart.data.datasets[0].data.push(waste);
+            wasteChart.update();
+
+        });
 }
 
-// Fetch every 5 seconds
-setInterval(fetchCurrentData, 5000);
-
-// Initial load
-fetchCurrentData();
+setInterval(fetchData, 5000);
