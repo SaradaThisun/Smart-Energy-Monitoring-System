@@ -8,7 +8,52 @@
 
 <body>
 
-    <div class="top-bar">
+    <div class="top-b<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Energy Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="top-bar">
+    <h2>Overview</h2>
+    <h2>ESP32 Energy Monitor</h2>
+</div>
+
+<div class="stats-container">
+
+    <div class="card">
+        <h3>Power (W)</h3>
+        <div id="powerValue" class="big-number">0</div>
+    </div>
+
+    <div class="card">
+        <h3>Energy (kWh)</h3>
+        <div id="energyValue" class="big-number">0</div>
+    </div>
+
+    <div class="card waste-card">
+        <h3>Power Wastage</h3>
+        <div id="wasteValue" class="big-number red">0</div>
+    </div>
+
+</div>
+
+<div class="chart-container">
+    <canvas id="powerChart"></canvas>
+</div>
+
+<div class="chart-container">
+    <canvas id="wasteChart"></canvas>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>ar">
         <h2>Overview</h2>
         <h2 class="device-name">ESP32</h2>
     </div>
