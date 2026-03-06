@@ -3,60 +3,87 @@
 #include <Adafruit_SSD1306.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <math.h>
 
-// OLED Configuration
 #define OLED_ADDR 0x3C
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// DS18B20 Configuration
-#define SENSOR_PIN 4 // Connect the DS18B20 Data pin to GPIO 4
-OneWire oneWire(SENSOR_PIN);
+#define DS18_PIN 4
+OneWire oneWire(DS18_PIN);
 DallasTemperature sensors(&oneWire);
+
+const int PIN_V = 34;
+float V_CAL = 0.58;
+
+float vrmsCounts(int samples, int delayUs) {
+  long sum = 0;
+  for (int i = 0; i < 200; i++) {
+    sum += analogRead(PIN_V);
+    delayMicroseconds(120);
+  }
+  float mid = sum / 200.0f;
+
+  double sq = 0;
+  for (int i = 0; i < samples; i++) {
+    float x = analogRead(PIN_V) - mid;
+    sq += (double)x * (double)x;
+    delayMicroseconds(delayUs);
+  }
+  return sqrt(sq / samples);
+}
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin(21, 22); // SDA, SCL
-  sensors.begin();    // Start the sensor
-  
+
+  Wire.begin(21, 22);
+  sensors.begin();
+
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    Serial.println("OLED init failed");
     for(;;);
   }
 
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(1);
-  display.setCursor(20, 10);
-  display.print("Initializing...");
   display.display();
-  delay(1000);
 }
 
 void loop() {
-  // Request temperature from sensor
-  sensors.requestTemperatures(); 
+  sensors.requestTemperatures();
   float tempC = sensors.getTempCByIndex(0);
+
+  float counts = vrmsCounts(2500, 250);
+  float Vrms = counts * V_CAL;
+
+  Serial.print("Temp=");
+  Serial.print(tempC, 1);
+  Serial.print("C  Vrms=");
+  Serial.println(Vrms, 1);
 
   display.clearDisplay();
 
-  // Header
   display.setTextSize(1);
   display.setCursor(0, 0);
-  display.print("TEMPERATURE:");
+  display.print("T:");
 
-  // Temperature Value
   display.setTextSize(2);
-  display.setCursor(0, 15);
-  
-  if(tempC == DEVICE_DISCONNECTED_C) {
-    display.print("ERROR");
-  } else {
-    display.print(tempC);
-    display.print(" C");
+  display.setCursor(18, 0);
+  if (tempC == DEVICE_DISCONNECTED_C) display.print("ERR");
+  else {
+    display.print(tempC, 1);
+    display.print("C");
   }
 
+  display.setTextSize(1);
+  display.setCursor(0, 18);
+  display.print("V:");
+
+  display.setTextSize(2);
+  display.setCursor(18, 16);
+  display.print(Vrms, 0);
+  display.print("V");
+
   display.display();
-  delay(1000); // Update every second
+  delay(600);
 }
