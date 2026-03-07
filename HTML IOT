@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>IoT Energy Monitoring Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+}
+
+.container{
+margin-top:40px;
+}
+
+.card{
+background:#1e293b;
+width:260px;
+margin:15px auto;
+padding:20px;
+border-radius:10px;
+}
+
+.value{
+font-size:38px;
+font-weight:bold;
+}
+
+.change{
+font-size:16px;
+margin-top:5px;
+}
+
+canvas{
+background:white;
+border-radius:10px;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>IoT Sensor Monitoring Dashboard</h1>
+
+<div class="container">
+
+<div class="card">
+<h2>Temperature</h2>
+<div class="value" id="temp">-- °C</div>
+<div class="change" id="tempChange"></div>
+</div>
+
+<div class="card">
+<h2>Voltage</h2>
+<div class="value" id="volt">-- V</div>
+<div class="change" id="voltChange"></div>
+</div>
+
+</div>
+
+<canvas id="tempChart" width="800" height="300"></canvas>
+<canvas id="voltChart" width="800" height="300"></canvas>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+import { getDatabase, ref, onValue }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+
+apiKey: "YOUR_API_KEY",
+
+authDomain: "YOUR_PROJECT.firebaseapp.com",
+
+databaseURL: "YOUR_DATABASE_URL",
+
+projectId: "YOUR_PROJECT_ID",
+
+storageBucket: "YOUR_PROJECT.appspot.com",
+
+messagingSenderId: "XXXX",
+
+appId: "XXXX"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const database = getDatabase(app);
+
+const tempRef = ref(database,'sensorData/temperature');
+const voltRef = ref(database,'sensorData/voltage');
+
+
+let pastTemp = null;
+let pastVolt = null;
+
+let tempHistory=[];
+let voltHistory=[];
+let labels=[];
+
+
+// TEMPERATURE GRAPH
+
+const tempChart = new Chart(document.getElementById("tempChart"),{
+
+type:'line',
+
+data:{
+labels:labels,
+datasets:[{
+label:'Temperature °C',
+data:tempHistory,
+borderWidth:3
+}]
+},
+
+options:{
+animation:false,
+scales:{y:{beginAtZero:true}}
+}
+
+});
+
+
+// VOLTAGE GRAPH
+
+const voltChart = new Chart(document.getElementById("voltChart"),{
+
+type:'line',
+
+data:{
+labels:labels,
+datasets:[{
+label:'Voltage V',
+data:voltHistory,
+borderWidth:3
+}]
+},
+
+options:{
+animation:false,
+scales:{y:{beginAtZero:true}}
+}
+
+});
+
+
+
+// REALTIME TEMPERATURE
+
+onValue(tempRef,(snapshot)=>{
+
+let temp = snapshot.val();
+
+document.getElementById("temp").innerHTML=temp+" °C";
+
+if(pastTemp!=null){
+
+let diff=temp-pastTemp;
+
+if(diff>0)
+document.getElementById("tempChange").innerHTML="▲ Increased "+diff.toFixed(2);
+
+else if(diff<0)
+document.getElementById("tempChange").innerHTML="▼ Decreased "+Math.abs(diff).toFixed(2);
+
+else
+document.getElementById("tempChange").innerHTML="No change";
+
+}
+
+pastTemp=temp;
+
+updateGraph(temp,null);
+
+});
+
+
+
+
+// REALTIME VOLTAGE
+
+onValue(voltRef,(snapshot)=>{
+
+let volt=snapshot.val();
+
+document.getElementById("volt").innerHTML=volt+" V";
+
+if(pastVolt!=null){
+
+let diff=volt-pastVolt;
+
+if(diff>0)
+document.getElementById("voltChange").innerHTML="▲ Increased "+diff.toFixed(2);
+
+else if(diff<0)
+document.getElementById("voltChange").innerHTML="▼ Decreased "+Math.abs(diff).toFixed(2);
+
+else
+document.getElementById("voltChange").innerHTML="No change";
+
+}
+
+pastVolt=volt;
+
+updateGraph(null,volt);
+
+});
+
+
+
+
+// UPDATE GRAPH EVERY SECOND
+
+function updateGraph(temp,volt){
+
+let time=new Date().toLocaleTimeString();
+
+if(labels.length>20){
+labels.shift();
+tempHistory.shift();
+voltHistory.shift();
+}
+
+labels.push(time);
+
+if(temp!=null)
+tempHistory.push(temp);
+else
+tempHistory.push(tempHistory[tempHistory.length-1]);
+
+if(volt!=null)
+voltHistory.push(volt);
+else
+voltHistory.push(voltHistory[voltHistory.length-1]);
+
+tempChart.update();
+voltChart.update();
+
+}
+
+</script>
+
+</body>
+
+</html>
