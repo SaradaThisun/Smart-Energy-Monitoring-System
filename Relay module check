@@ -1,0 +1,20 @@
+// Define the pin connected to the relay
+const int relayPin = 7; // Pin 7 is connected to the relay IN
+
+void setup() {
+  // Initialize the relay pin as an output
+  pinMode(relayPin, OUTPUT);
+  
+  // Start with the relay off
+  digitalWrite(relayPin, LOW); // LOW will turn off the relay (NO is open)
+}
+
+void loop() {
+  // Turn on the relay (AC device will turn on)
+  digitalWrite(relayPin, HIGH); // HIGH will activate the relay (NO closes)
+  delay(10000); // Wait for 10 seconds
+  
+  // Turn off the relay (AC device will turn off)
+  digitalWrite(relayPin, LOW); // LOW will turn off the relay (NO opens)
+  delay(10000); // Wait for 10 seconds
+}
