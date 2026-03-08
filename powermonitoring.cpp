@@ -1,127 +1,57 @@
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <math.h>
+const int CURRENT_PIN = A0;
+const float ADC_REF = 5.0;
+const int ADC_MAX = 1023;
 
-// ---------------- OLED ----------------
-#define OLED_ADDR 0x3C
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-
-// ---------------- DS18B20 ----------------
-#define SENSOR_PIN 4
-OneWire oneWire(SENSOR_PIN);
-DallasTemperature sensors(&oneWire);
-
-// ---------------- SCT-013 ----------------
-#define CURRENT_PIN 34   // ADC1 safe pin
-#define ADC_MAX 4095.0
-#define VREF 3.3
-
-// Calibration 
-float I_CAL = 15.0;   // Adjust later
-
-// Sampling settings
-#define SAMPLE_COUNT 1000
-#define SAMPLE_DELAY_US 200
-
-// ---------------- Function Prototype ----------------
-float measureCurrentRMS();
+// SCT-013-030 = 30A : 1V RMS
+const float CURRENT_PER_VOLT = 30.0;
 
 void setup() {
-  Serial.begin(115200);
-
-  Wire.begin(21, 22);
-  sensors.begin();
-
-  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    Serial.println("OLED init failed");
-    while (true);
-  }
-
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(1);
-  display.setCursor(20, 10);
-  display.print("Initializing...");
-  display.display();
-  delay(1000);
+  Serial.begin(9600);
 }
 
 void loop() {
+  const int samples = 1000;
 
-  // ---- Temperature ----
-  sensors.requestTemperatures();
-  float tempC = sensors.getTempCByIndex(0);
+  long sumRaw = 0;
+  float sumSq = 0;
 
-  // ---- Current ----
-  float Irms = measureCurrentRMS();
+  // Step 1: find actual DC offset
+  for (int i = 0; i < samples; i++) {
+    int raw = analogRead(CURRENT_PIN);
+    sumRaw += raw;
+    delayMicroseconds(200);
+  }
 
-  Serial.print("Temp: ");
-  Serial.print(tempC);
-  Serial.print(" C  |  Current: ");
-  Serial.print(Irms, 2);
+  float offset = (float)sumRaw / samples;
+
+  // Step 2: calculate AC RMS around that offset
+  for (int i = 0; i < samples; i++) {
+    int raw = analogRead(CURRENT_PIN);
+    float centered = raw - offset;
+    sumSq += centered * centered;
+    delayMicroseconds(200);
+  }
+
+  float rmsCounts = sqrt(sumSq / samples);
+
+  // Convert counts to volts RMS
+  float vrms = (rmsCounts * ADC_REF) / ADC_MAX;
+
+  // Convert volts RMS to current
+  float current = vrms * CURRENT_PER_VOLT;
+
+  // Noise floor: ignore tiny readings
+  if (current < 0.15) {
+    current = 0.0;
+  }
+
+  Serial.print("Offset: ");
+  Serial.print(offset, 2);
+  Serial.print("   Vrms: ");
+  Serial.print(vrms, 4);
+  Serial.print(" V   Current: ");
+  Serial.print(current, 3);
   Serial.println(" A");
 
-  // ---- OLED Display ----
-  display.clearDisplay();
-
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("Temp: ");
-  
-  if (tempC == DEVICE_DISCONNECTED_C) {
-    display.print("ERROR");
-  } else {
-    display.print(tempC, 1);
-    display.print(" C");
-  }
-
-  display.setCursor(0, 16);
-  display.print("Current: ");
-  display.print(Irms, 2);
-  display.print(" A");
-
-  display.display();
-
   delay(1000);
-}
-
-
-// Measure AC RMS Current from biased waveform
-
-float measureCurrentRMS() {
-
-  double sum = 0;
-  double sumSq = 0;
-
-  // First pass: get DC offset
-  for (int i = 0; i < SAMPLE_COUNT; i++) {
-    int raw = analogRead(CURRENT_PIN);
-    sum += raw;
-    delayMicroseconds(SAMPLE_DELAY_US);
-  }
-
-  double mean = sum / SAMPLE_COUNT;
-
-  // Second pass: RMS calculation
-  for (int i = 0; i < SAMPLE_COUNT; i++) {
-    int raw = analogRead(CURRENT_PIN);
-    double centered = raw - mean;
-    sumSq += centered * centered;
-    delayMicroseconds(SAMPLE_DELAY_US);
-  }
-
-  double rmsCounts = sqrt(sumSq / SAMPLE_COUNT);
-
-  // Convert ADC counts to volts
-  double rmsVolts = (rmsCounts / ADC_MAX) * VREF;
-
-  // Apply calibration factor
-  float Irms = rmsVolts * I_CAL;
-
-  return Irms;
 }
