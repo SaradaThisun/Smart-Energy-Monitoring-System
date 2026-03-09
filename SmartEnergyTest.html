@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Energy Monitor</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #f5f7fa;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .dashboards-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+        }
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 45%; /* Adjust width to make space for two dashboards */
+        }
+        .card-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            width: 260px;
+            text-align: center;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
+            transition: 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .value {
+            font-size: 42px;
+            margin-top: 10px;
+            color: #0078ff;
+        }
+        .chart-container {
+            width: 100%;
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Smart Energy Monitor</h1>
+
+    <div class="dashboards-container">
+        <!-- Dashboard 1 -->
+        <div class="dashboard">
+            <h2>Device 1</h2>
+            <div class="card-container">
+                <div class="card">
+                    <h2>Power (W)</h2>
+                    <div class="value" id="power1">-- W</div>
+                </div>
+                <div class="card">
+                    <h2>Current (A)</h2>
+                    <div class="value" id="current1">-- A</div>
+                </div>
+                <div class="card">
+                    <h2>Voltage (V)</h2>
+                    <div class="value" id="voltage1">-- V</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="powerChart1"></canvas>
+            </div>
+        </div>
+
+        <!-- Dashboard 2 -->
+        <div class="dashboard">
+            <h2>Device 2</h2>
+            <div class="card-container">
+                <div class="card">
+                    <h2>Power (W)</h2>
+                    <div class="value" id="power2">-- W</div>
+                </div>
+                <div class="card">
+                    <h2>Current (A)</h2>
+                    <div class="value" id="current2">-- A</div>
+                </div>
+                <div class="card">
+                    <h2>Voltage (V)</h2>
+                    <div class="value" id="voltage2">-- V</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="powerChart2"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+    apiKey: "AIzaSyDBFy0g9TAQawRNsO6F9IRhnkP5TZQQLfU",
+    authDomain: "test1-230d1.firebaseapp.com",
+    databaseURL: "https://test1-230d1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "test1-230d1",
+    storageBucket: "test1-230d1.firebasestorage.app",
+    messagingSenderId: "761603525569",
+    appId: "1:761603525569:web:f840de48d1f9ba5111fd40"
+  };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        const powerRef1 = firebase.database().ref("/sensor/device1/power");
+        const currentRef1 = firebase.database().ref("/sensor/device1/current");
+        const voltageRef1 = firebase.database().ref("/sensor/device1/voltage");
+
+        const powerRef2 = firebase.database().ref("/sensor/device2/power");
+        const currentRef2 = firebase.database().ref("/sensor/device2/current");
+        const voltageRef2 = firebase.database().ref("/sensor/device2/voltage");
+
+        // Create the charts for Power (W)
+        const powerChart1 = new Chart(document.getElementById("powerChart1"), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Power (W) - Device 1',
+                    data: [],
+                    borderColor: '#3aa0c8',
+                    fill: false
+                }]
+            }
+        });
+
+        const powerChart2 = new Chart(document.getElementById("powerChart2"), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Power (W) - Device 2',
+                    data: [],
+                    borderColor: '#f56d91',
+                    fill: false
+                }]
+            }
+        });
+
+        // Fetch and update Power, Current, Voltage for Device 1
+        powerRef1.on("value", snapshot => {
+            const power1 = snapshot.val();
+            document.getElementById("power1").innerHTML = `${power1} W`;
+            updateChart(power1, powerChart1);
+        });
+
+        currentRef1.on("value", snapshot => {
+            const current1 = snapshot.val();
+            document.getElementById("current1").innerHTML = `${current1} A`;
+        });
+
+        voltageRef1.on("value", snapshot => {
+            const voltage1 = snapshot.val();
+            document.getElementById("voltage1").innerHTML = `${voltage1} V`;
+        });
+
+        // Fetch and update Power, Current, Voltage for Device 2
+        powerRef2.on("value", snapshot => {
+            const power2 = snapshot.val();
+            document.getElementById("power2").innerHTML = `${power2} W`;
+            updateChart(power2, powerChart2);
+        });
+
+        currentRef2.on("value", snapshot => {
+            const current2 = snapshot.val();
+            document.getElementById("current2").innerHTML = `${current2} A`;
+        });
+
+        voltageRef2.on("value", snapshot => {
+            const voltage2 = snapshot.val();
+            document.getElementById("voltage2").innerHTML = `${voltage2} V`;
+        });
+
+        // Update chart with new Power value
+        function updateChart(power, chart) {
+            const now = new Date().toLocaleTimeString();
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(power);
+
+            // Maintain only the last 20 data points on the chart
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update();
+        }
+    </script>
+</body>
+</html>
