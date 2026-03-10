@@ -10,24 +10,26 @@
 #define SCREEN_HEIGHT 32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-#define DS18_PIN 4
-OneWire oneWire(DS18_PIN);
+#define SENSOR_PIN 4
+OneWire oneWire(SENSOR_PIN);
 DallasTemperature sensors(&oneWire);
 
-const int PIN_V = 34;
+#define CURRENT_SENSOR_PIN 32
+#define RELAY_PIN 23
+
 float V_CAL = 0.58;
 
 float vrmsCounts(int samples, int delayUs) {
   long sum = 0;
   for (int i = 0; i < 200; i++) {
-    sum += analogRead(PIN_V);
+    sum += analogRead(CURRENT_SENSOR_PIN);
     delayMicroseconds(120);
   }
   float mid = sum / 200.0f;
-
+  
   double sq = 0;
   for (int i = 0; i < samples; i++) {
-    float x = analogRead(PIN_V) - mid;
+    float x = analogRead(CURRENT_SENSOR_PIN) - mid;
     sq += (double)x * (double)x;
     delayMicroseconds(delayUs);
   }
@@ -36,10 +38,10 @@ float vrmsCounts(int samples, int delayUs) {
 
 void setup() {
   Serial.begin(115200);
-
   Wire.begin(21, 22);
   sensors.begin();
-
+  pinMode(RELAY_PIN, OUTPUT);
+  
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     for(;;);
   }
@@ -62,7 +64,6 @@ void loop() {
   Serial.println(Vrms, 1);
 
   display.clearDisplay();
-
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.print("T:");
@@ -85,5 +86,12 @@ void loop() {
   display.print("V");
 
   display.display();
-  delay(600);
+
+  if (Vrms > 200) {
+    digitalWrite(RELAY_PIN, HIGH);
+  } else {
+    digitalWrite(RELAY_PIN, LOW);
+  }
+
+  delay(700);
 }
