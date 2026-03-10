@@ -6,8 +6,8 @@
 #define WIFI_PWD "11111111"
 
 // Firebase credentials
-#define API_KEY "AIzaSyDDOV-xCVZ7IddShGBGLrU6PikxQLExIVo"
-#define DB_URL "https://test1-591e4-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define API_KEY "AIzaSyDBFy0g9TAQawRNsO6F9IRhnkP5TZQQLfU"
+#define DB_URL "https://test1-230d1-default-rtdb.asia-southeast1.firebasedatabase.app/"
 
 // Firebase objects
 FirebaseData fbdo;
