@@ -1,81 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Smart Energy Dashboard</title>
-    <link rel="stylesheet" href="EnergyWeb.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body>
-
-    <div class="top-b<!DOCTYPE html>
-<html>
-<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Energy Monitor</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase & Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
-<div class="top-bar">
-    <h2>Overview</h2>
-    <h2>ESP32 Energy Monitor</h2>
-</div>
+<h1>⚡ Smart Energy Monitor</h1>
 
-<div class="stats-container">
+<div id="warning">⚠️ WARNING: Daily usage exceeded 3 kWh limit!</div>
+<div id="tempWarning">🌡️ HIGH TEMP: A device exceeded 60°C — Relay turned OFF automatically!</div>
 
+<div class="cards">
     <div class="card">
-        <h3>Power (W)</h3>
-        <div id="powerValue" class="big-number">0</div>
+        <div class="lbl">Daily Usage</div>
+        <div class="val" id="cDaily">-- kWh</div>
+        <div class="lbl">Limit: 3.0 kWh</div>
     </div>
-
     <div class="card">
-        <h3>Energy (kWh)</h3>
-        <div id="energyValue" class="big-number">0</div>
+        <div class="lbl">Power Now</div>
+        <div class="val" id="cPower">-- W</div>
+        <div class="lbl">Current draw</div>
     </div>
-
-    <div class="card waste-card">
-        <h3>Power Wastage</h3>
-        <div id="wasteValue" class="big-number red">0</div>
+    <div class="card">
+        <div class="lbl">Efficiency</div>
+        <div class="val" id="cEff">-- %</div>
+        <div class="lbl">Average</div>
     </div>
-
+    <div class="card">
+        <div class="lbl">Online Devices</div>
+        <div class="val" id="cOnline">--</div>
+        <div class="lbl">Connected</div>
+    </div>
 </div>
 
-<div class="chart-container">
-    <canvas id="powerChart"></canvas>
-</div>
-
-<div class="chart-container">
-    <canvas id="wasteChart"></canvas>
-</div>
-
-<script src="script.js"></script>
-
-</body>
-</html>ar">
-        <h2>Overview</h2>
-        <h2 class="device-name">ESP32</h2>
+<div class="bar-box">
+    <p id="barLabel">Daily Usage: 0 / 3.0 kWh</p>
+    <div class="bar-track">
+        <div class="bar-fill" id="barFill"></div>
     </div>
+</div>
 
-    <div class="container">
 
-        <!-- LEFT CARD -->
-        <div class="card left-card">
-            <h3>Power (W)</h3>
-            <div class="current-value" id="currentValue">
-                0.00
-            </div>
+<div id="deviceList"></div>
+
+<div class="chart-box">
+    <h2>Real-Time Power (W)</h2>
+    <canvas id="myChart" height="80"></canvas>
+</div>
+
+<div id="lastUpdate">Last updated: --</div>
+
+<div id="modal">
+    <div class="mbox">
+        <h2 id="mTitle">Add Device</h2>
+        <label>Device Name</label>
+        <input type="text" id="iName" placeholder="e.g. Fan">
+        <label>Status</label>
+        <select id="iStatus">
+            <option value="ONLINE">ONLINE</option>
+            <option value="OFFLINE">OFFLINE</option>
+        </select>
+        <div class="mbtns">
+            <button id="cancelBtn" onclick="closeModal()">Cancel</button>
+            <button id="saveBtn"   onclick="saveDevice()">Save</button>
         </div>
-
-        <!-- RIGHT CARD -->
-        <div class="card right-card">
-            <h3>Power</h3>
-            <canvas id="currentChart"></canvas>
-        </div>
-
     </div>
+</div>
 
-<script src="EnergyWeb.js"></script>
+<!-- JavaScript -->
+<script src="app.js"></script>
 </body>
 </html>
