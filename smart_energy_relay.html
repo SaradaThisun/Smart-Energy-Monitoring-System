@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Energy Monitor</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: white; padding: 20px; }
+
+        h1 { text-align: center; color: #38bdf8; margin-bottom: 20px; }
+
+        #warning {
+            background: #7f1d1d; border: 2px solid #ef4444; color: #fca5a5;
+            padding: 12px 20px; border-radius: 8px; margin-bottom: 12px;
+            font-weight: bold; display: none;
+        }
+        #tempWarning {
+            background: #78350f; border: 2px solid #f97316; color: #fdba74;
+            padding: 12px 20px; border-radius: 8px; margin-bottom: 20px;
+            font-weight: bold; display: none;
+        }
+
+        .cards { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+        .card {
+            background: #1e293b; border-radius: 10px; padding: 20px;
+            flex: 1; min-width: 140px; text-align: center; border: 1px solid #334155;
+        }
+        .card .val { font-size: 26px; font-weight: bold; color: #38bdf8; margin: 6px 0; }
+        .card .lbl { font-size: 12px; color: #94a3b8; }
+
+        .bar-box {
+            background: #1e293b; border-radius: 10px; padding: 15px 20px;
+            margin-bottom: 20px; border: 1px solid #334155;
+        }
+        .bar-box p { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+        .bar-track { background: #334155; border-radius: 20px; height: 14px; overflow: hidden; }
+        .bar-fill { height: 100%; background: #38bdf8; border-radius: 20px; transition: width 0.5s; width: 0%; }
+        .bar-fill.danger { background: #ef4444; }
+
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .row h2 { font-size: 16px; color: #cbd5e1; }
+
+        #addBtn {
+            background: #0ea5e9; color: white; border: none;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;
+        }
+        #addBtn:hover { background: #0284c7; }
+
+        #deviceList { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
+        .device {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 10px; padding: 15px; min-width: 210px; flex: 1;
+        }
+        .device.hot { border-color: #f97316; background: #1c1008; }
+        .device h3 { font-size: 15px; margin-bottom: 6px; }
+        .device p  { font-size: 13px; color: #94a3b8; margin-bottom: 3px; }
+
+        .badge {
+            display: inline-block; padding: 2px 10px;
+            border-radius: 20px; font-size: 11px; margin-bottom: 10px;
+        }
+        .online  { background: #14532d; color: #4ade80; }
+        .offline { background: #292524; color: #78716c; }
+
+        /* RELAY STATUS BADGE */
+        .relay-badge {
+            display: inline-block; padding: 2px 10px;
+            border-radius: 20px; font-size: 11px; margin-bottom: 10px; margin-left: 6px;
+        }
+        .relay-on  { background: #1e3a5f; color: #60a5fa; }
+        .relay-off { background: #1c1917; color: #78716c; }
+
+        .temp-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #0f172a; border-radius: 8px; padding: 8px 12px;
+            margin-bottom: 10px; border: 1px solid #334155;
+        }
+        .temp-row .temp-val { font-size: 22px; font-weight: bold; color: #34d399; }
+        .temp-row .temp-val.warm { color: #fbbf24; }
+        .temp-row .temp-val.hot  { color: #ef4444; }
+        .temp-bar-track {
+            flex: 1; margin: 0 12px; background: #334155;
+            border-radius: 20px; height: 8px; overflow: hidden;
+        }
+        .temp-bar-fill { height: 100%; border-radius: 20px; background: #34d399; transition: width 0.5s; }
+        .temp-bar-fill.warm { background: #fbbf24; }
+        .temp-bar-fill.hot  { background: #ef4444; }
+
+        .btns { display: flex; gap: 6px; margin-top: 10px; }
+        .btns button {
+            flex: 1; padding: 6px; border: none;
+            border-radius: 6px; cursor: pointer; font-size: 12px; color: white;
+        }
+        .b-edit   { background: #1d4ed8; }
+        .b-toggle { background: #15803d; }
+        .b-del    { background: #991b1b; }
+
+        .chart-box {
+            background: #1e293b; border-radius: 10px; padding: 20px;
+            border: 1px solid #334155; margin-bottom: 20px;
+        }
+        .chart-box h2 { font-size: 14px; color: #94a3b8; margin-bottom: 12px; }
+
+        #modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+        }
+        #modal.show { display: flex; }
+        .mbox {
+            background: #1e293b; border-radius: 12px; padding: 25px;
+            width: 320px; border: 1px solid #334155;
+        }
+        .mbox h2 { margin-bottom: 15px; font-size: 18px; color: #38bdf8; }
+        .mbox label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 4px; }
+        .mbox input, .mbox select {
+            width: 100%; background: #0f172a; border: 1px solid #334155;
+            color: white; padding: 8px 12px; border-radius: 6px;
+            margin-bottom: 12px; font-size: 14px;
+        }
+        .mbtns { display: flex; gap: 10px; margin-top: 5px; }
+        .mbtns button {
+            flex: 1; padding: 10px; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 14px;
+        }
+        #saveBtn   { background: #0ea5e9; color: white; }
+        #cancelBtn { background: #334155; color: #cbd5e1; }
+
+        #lastUpdate { text-align: right; font-size: 12px; color: #475569; }
+    </style>
+</head>
+<body>
+
+<h1>⚡ Smart Energy Monitor</h1>
+
+<div id="warning">⚠️ WARNING: Daily usage exceeded 3 kWh limit!</div>
+<div id="tempWarning">🌡️ HIGH TEMP: A device exceeded 60°C — Relay turned OFF automatically!</div>
+
+<div class="cards">
+    <div class="card">
+        <div class="lbl">Daily Usage</div>
+        <div class="val" id="cDaily">-- kWh</div>
+        <div class="lbl">Limit: 3.0 kWh</div>
+    </div>
+    <div class="card">
+        <div class="lbl">Power Now</div>
+        <div class="val" id="cPower">-- W</div>
+        <div class="lbl">Current draw</div>
+    </div>
+    <div class="card">
+        <div class="lbl">Efficiency</div>
+        <div class="val" id="cEff">-- %</div>
+        <div class="lbl">Average</div>
+    </div>
+    <div class="card">
+        <div class="lbl">Online Devices</div>
+        <div class="val" id="cOnline">--</div>
+        <div class="lbl">Connected</div>
+    </div>
+</div>
+
+<div class="bar-box">
+    <p id="barLabel">Daily Usage: 0 / 3.0 kWh</p>
+    <div class="bar-track">
+        <div class="bar-fill" id="barFill"></div>
+    </div>
+</div>
+
+<div class="row">
+    <h2>Connected Devices</h2>
+    <button id="addBtn" onclick="openModal(null)">+ Add Device</button>
+</div>
+<div id="deviceList"></div>
+
+<div class="chart-box">
+    <h2>Real-Time Power (W)</h2>
+    <canvas id="myChart" height="80"></canvas>
+</div>
+
+<div id="lastUpdate">Last updated: --</div>
+
+<div id="modal">
+    <div class="mbox">
+        <h2 id="mTitle">Add Device</h2>
+        <label>Device Name</label>
+        <input type="text" id="iName" placeholder="e.g. Fan">
+        <label>Power (Watts)</label>
+        <input type="number" id="iPower" placeholder="e.g. 200">
+        <label>Efficiency (%)</label>
+        <input type="number" id="iEff" placeholder="e.g. 85">
+        <label>Status</label>
+        <select id="iStatus">
+            <option value="ONLINE">ONLINE</option>
+            <option value="OFFLINE">OFFLINE</option>
+        </select>
+        <div class="mbtns">
+            <button id="cancelBtn" onclick="closeModal()">Cancel</button>
+            <button id="saveBtn"   onclick="saveDevice()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Firebase ─────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: "AIzaSyDBFy0g9TAQawRNsO6F9IRhnkP5TZQQLfU",
+    authDomain: "test1-230d1.firebaseapp.com",
+    databaseURL: "https://test1-230d1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "test1-230d1",
+    storageBucket: "test1-230d1.firebasestorage.app",
+    messagingSenderId: "761603525569",
+    appId: "1:761603525569:web:f840de48d1f9ba5111fd40"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── Chart ─────────────────────────────────────────────
+const labels = [], powers = [];
+const chart = new Chart(document.getElementById('myChart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Power (W)', data: powers,
+            borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)',
+            borderWidth: 2, tension: 0.4, fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+        }
+    }
+});
+
+function addChartPoint(val) {
+    labels.push(new Date().toLocaleTimeString());
+    powers.push(val);
+    if (labels.length > 15) { labels.shift(); powers.shift(); }
+    chart.update();
+}
+
+// ── Energy Warning & Bar ──────────────────────────────
+function updateBar(kwh) {
+    const limit = 3.0;
+    const pct   = Math.min((kwh / limit) * 100, 100);
+    const fill  = document.getElementById('barFill');
+    fill.style.width = pct + '%';
+    fill.className   = 'bar-fill' + (kwh >= limit * 0.8 ? ' danger' : '');
+    document.getElementById('barLabel').textContent =
+        'Daily Usage: ' + kwh.toFixed(2) + ' / ' + limit + ' kWh';
+
+    const warn = document.getElementById('warning');
+    if (kwh >= limit) {
+        warn.style.display = 'block';
+        warn.textContent = '⚠️ ALERT: Daily usage ' + kwh.toFixed(2) + ' kWh exceeded 3 kWh limit!';
+    } else if (kwh >= limit * 0.8) {
+        warn.style.display = 'block';
+        warn.textContent = '⚠️ WARNING: Approaching limit — ' + kwh.toFixed(2) + ' kWh (' + pct.toFixed(0) + '%)';
+    } else {
+        warn.style.display = 'none';
+    }
+}
+
+// ── Temperature Helpers ───────────────────────────────
+const TEMP_MAX = 60;
+
+function getTempClass(temp) {
+    if (temp >= TEMP_MAX) return 'hot';
+    if (temp >= 45)       return 'warm';
+    return '';
+}
+
+function getTempBarWidth(temp) {
+    return Math.min((temp / TEMP_MAX) * 100, 100) + '%';
+}
+
+// ── Real-Time: Energy ─────────────────────────────────
+db.ref('/energy').on('value', snap => {
+    const d = snap.val();
+    if (!d) return;
+    const kwh = d.dailyKwh !== undefined
+        ? d.dailyKwh
+        : parseFloat((d.consumption * 8 / 1000).toFixed(2));
+
+    document.getElementById('cDaily').textContent = kwh.toFixed(2) + ' kWh';
+    document.getElementById('cPower').textContent = (d.consumption || 0) + ' W';
+    document.getElementById('cEff').textContent   = (d.efficiency  || 0) + ' %';
+    updateBar(kwh);
+    addChartPoint(d.consumption || 0);
+    document.getElementById('lastUpdate').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString();
+});
+
+// ── Real-Time: Devices ────────────────────────────────
+db.ref('/devices').on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    const all    = Object.values(data);
+    const online = all.filter(d => d.status === 'ONLINE').length;
+    document.getElementById('cOnline').textContent = online + ' / ' + all.length;
+
+    // Check overheating — auto turn off relay via Firebase
+    let anyHot = false;
+    for (const [id, d] of Object.entries(data)) {
+        const temp = d.temperature || 0;
+        if (temp >= TEMP_MAX && d.status === 'ONLINE') {
+            anyHot = true;
+            // Set relay OFF and status OFFLINE in Firebase
+            // ESP32 reads relay field and physically turns off GPIO 5
+            db.ref('/devices/' + id).update({
+                status: 'OFFLINE',
+                relay:  'OFF'
+            });
+        }
+    }
+    document.getElementById('tempWarning').style.display = anyHot ? 'block' : 'none';
+
+    renderDevices(data);
+});
+
+// ── Render Devices ────────────────────────────────────
+function renderDevices(data) {
+    const list = document.getElementById('deviceList');
+    list.innerHTML = '';
+
+    for (const [id, d] of Object.entries(data)) {
+        const isOn    = d.status === 'ONLINE';
+        const relay   = d.relay  || 'OFF';
+        const temp    = d.temperature || 0;
+        const cls     = getTempClass(temp);
+        const barW    = getTempBarWidth(temp);
+
+        const div = document.createElement('div');
+        div.className = 'device' + (cls === 'hot' ? ' hot' : '');
+
+        div.innerHTML = `
+            <h3>${d.name}</h3>
+            <span class="badge ${isOn ? 'online' : 'offline'}">${d.status}</span>
+            <span class="relay-badge ${relay === 'ON' ? 'relay-on' : 'relay-off'}">
+                🔌 Relay: ${relay}
+            </span>
+
+            <div class="temp-row">
+                <span style="font-size:13px; color:#94a3b8;">🌡️ Temp</span>
+                <div class="temp-bar-track">
+                    <div class="temp-bar-fill ${cls}" style="width:${barW}"></div>
+                </div>
+                <span class="temp-val ${cls}">${temp.toFixed(1)}°C</span>
+            </div>
+
+            <p>⚡ Power: ${d.power || 0} W</p>
+            <p>📊 Efficiency: ${d.efficiency || 0} %</p>
+            <p>💧 Wastage: ${d.wastage || 0} kWh</p>
+
+            ${cls === 'hot'  ? '<p style="color:#ef4444;font-size:12px;margin-top:6px;">🔴 Relay OFF — overheating! Auto shutdown.</p>' : ''}
+            ${cls === 'warm' ? '<p style="color:#fbbf24;font-size:12px;margin-top:6px;">🟡 Temperature getting high — watch out!</p>'  : ''}
+
+            <div class="btns">
+                <button class="b-edit"   onclick="openModal('${id}')">Edit</button>
+                <button class="b-toggle" onclick="toggleRelay('${id}','${relay}')">${relay === 'ON' ? 'Turn Off' : 'Turn On'}</button>
+                <button class="b-del"    onclick="deleteDevice('${id}')">Delete</button>
+            </div>`;
+
+        list.appendChild(div);
+    }
+}
+
+// ── Toggle Relay ──────────────────────────────────────
+// Writes relay ON/OFF to Firebase → ESP32 reads and controls GPIO 5
+function toggleRelay(id, currentRelay) {
+    const newRelay  = currentRelay === 'ON' ? 'OFF' : 'ON';
+    const newStatus = newRelay === 'ON' ? 'ONLINE' : 'OFFLINE';
+    db.ref('/devices/' + id).update({
+        relay:  newRelay,
+        status: newStatus
+    });
+}
+
+// ── Delete Device ─────────────────────────────────────
+function deleteDevice(id) {
+    if (confirm('Delete this device?')) db.ref('/devices/' + id).remove();
+}
+
+// ── Modal ─────────────────────────────────────────────
+let editId = null;
+
+function openModal(id) {
+    editId = id;
+    document.getElementById('mTitle').textContent = id ? 'Edit Device' : 'Add Device';
+    document.getElementById('iName').value   = '';
+    document.getElementById('iPower').value  = '';
+    document.getElementById('iEff').value    = '';
+    document.getElementById('iStatus').value = 'ONLINE';
+
+    if (id) {
+        db.ref('/devices/' + id).once('value', snap => {
+            const d = snap.val();
+            document.getElementById('iName').value   = d.name       || '';
+            document.getElementById('iPower').value  = d.power      || '';
+            document.getElementById('iEff').value    = d.efficiency || '';
+            document.getElementById('iStatus').value = d.status     || 'ONLINE';
+        });
+    }
+    document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    editId = null;
+}
+
+function saveDevice() {
+    const name = document.getElementById('iName').value.trim();
+    if (!name) { alert('Enter a device name!'); return; }
+
+    const device = {
+        name:        name,
+        power:       parseInt(document.getElementById('iPower').value) || 0,
+        efficiency:  parseInt(document.getElementById('iEff').value)   || 0,
+        status:      document.getElementById('iStatus').value,
+        relay:       document.getElementById('iStatus').value === 'ONLINE' ? 'ON' : 'OFF',
+        wastage:     0,
+        temperature: 0
+    };
+
+    if (editId) {
+        db.ref('/devices/' + editId).update(device);
+    } else {
+        db.ref('/devices').push(device);
+    }
+    closeModal();
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
