@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Energy Monitor</title>
     
-    <!-- CSS -->
-    <link rel="stylesheet" href="styles.css">
+   
     
     <!-- Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -15,7 +14,10 @@
 </head>
 <body>
 
-<h1>⚡ Smart Energy Monitor</h1>
+<div class="header">
+    <h1>⚡ Smart Energy Monitor</h1>
+    <button class="power-btn" onclick="togglePower()">POWER</button>
+</div>
 
 <div id="warning">⚠️ WARNING: Daily usage exceeded 3 kWh limit!</div>
 <div id="tempWarning">🌡️ HIGH TEMP: A device exceeded 60°C — Relay turned OFF automatically!</div>
@@ -72,7 +74,7 @@
     </div>
 </div>
 
-<!-- JavaScript -->
+
 <script src="app.js"></script>
 </body>
 </html>
