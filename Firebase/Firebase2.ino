@@ -7,14 +7,14 @@
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
-// Provide the token generation process info
+
 #include <addons/TokenHelper.h>
 
-// WiFi credentials
-#define WIFI_SSID "Sumudu"
-#define WIFI_PASSWORD "11112222"
 
-// Firebase configuration for project-c6ce3
+#define WIFI_SSID "Galaxy S23 Ultra 7F59"
+#define WIFI_PASSWORD "11111111"
+
+
 #define API_KEY "AIzaSyAXRuermsU80P5qGt8bVIv7Jg-e8FQ0KxY"
 #define DATABASE_URL "https://project-c6ce3-default-rtdb.asia-southeast1.firebasedatabase.app"
 
@@ -29,10 +29,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 OneWire oneWire(SENSOR_PIN);
 DallasTemperature sensors(&oneWire);
 
-#define PIN_V 34        // ZMPT101B connected to GPIO34
-#define RELAY_PIN 5     // GPIO5 for controlling the relay (main load)
-#define CURRENT_SENSOR_PIN 32  // ACS712 connected to GPIO32
-#define BUZZER_PIN 19   // Buzzer for audible alarm
+#define PIN_V 34        
+#define RELAY_PIN 5     
+#define CURRENT_SENSOR_PIN 32  
+#define BUZZER_PIN 19   
 
 // ESP32 ADC settings
 #define VOLTAGE_REF 3.3
@@ -46,9 +46,9 @@ const float DIVIDER_COMPENSATION = (R1 + R2) / R2;
 const float NOISE_FLOOR = 0.20;
 
 // Temperature Safety Settings
-#define TEMP_WARNING_LEVEL 45.0f   // Warning at 45C
-#define TEMP_CRITICAL_LEVEL 55.0f   // Critical cutoff at 55C
-#define TEMP_RECOVERY_LEVEL 40.0f   // Reset when temperature drops to 40C
+#define TEMP_WARNING_LEVEL 45.0f   
+#define TEMP_CRITICAL_LEVEL 55.0f  
+#define TEMP_RECOVERY_LEVEL 40.0f  
 
 // ZMPT101B settings
 float V_CAL = 0.58;
@@ -75,10 +75,10 @@ unsigned long sendDataPrevMillis = 0;
 const long FIREBASE_INTERVAL = 5000; // Send data every 5 seconds
 bool firebaseReady = false;
 
-// Device ID (you can change this if you have multiple devices)
+// Device ID 
 String deviceID = "esp32_001";
 
-// Function to calculate Vrms for voltage (ZMPT101B)
+// Function to calculate Vrms for voltage 
 float vrmsCounts(int samples, int delayUs) {
   long sum = 0;
   for (int i = 0; i < 200; i++) {
@@ -215,19 +215,14 @@ void setupWiFi() {
 }
 
 // Function to setup Firebase
-// Replace your setupFirebase() function with this:
-
 // Function to setup Firebase with Email/Password
 void setupFirebase() {
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
   
-  // Use email/password authentication instead of anonymous
-  auth.user.email = "vinurasandaruwan@gmail.com";     // You can create this email in Firebase
-  auth.user.password = "20030628";      // Use a simple password
   
-  // OR use this for testing (bypass authentication entirely - use with caution!)
-  // config.signer.tokens.legacy_token = "YOUR_DATABASE_SECRET"; // Get from Project Settings
+  auth.user.email = "vinurasandaruwan@gmail.com";   
+  auth.user.password = "20030628";      
   
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
@@ -267,7 +262,7 @@ void sendToFirebase(float temp, float voltage, float current, String status) {
   historyJson.add("timestamp", String(currentTime));
   historyJson.add("device_id", deviceID);
   
-  // Push to realtime_data folder (creates new entries with timestamps)
+  // Push to realtime_data folder 
   String historyPath = "/realtime_data/" + String(currentTime);
   if (Firebase.RTDB.setJSON(&fbdo, historyPath.c_str(), &historyJson)) {
     Serial.println("History data saved");
@@ -275,7 +270,7 @@ void sendToFirebase(float temp, float voltage, float current, String status) {
     Serial.println("Failed to save history: " + fbdo.errorReason());
   }
   
-  // 2. Update current readings (always overwrites with latest)
+  // 2. Update current readings 
   FirebaseJson currentJson;
   currentJson.add("temperature", temp);
   currentJson.add("voltage", voltage);
@@ -378,7 +373,7 @@ void setup() {
     Firebase.RTDB.setJSON(&fbdo, "/devices/" + deviceID + "/info", &deviceInfo);
   }
   
-  // Startup beep (short beep)
+  // Startup beep
   digitalWrite(BUZZER_PIN, HIGH);
   delay(200);
   digitalWrite(BUZZER_PIN, LOW);
@@ -486,14 +481,14 @@ void loop() {
     }
   }
 
-  // Line 2: Voltage
+  // Voltage
   display.setCursor(0, 12);
   display.print("V:");
   display.setCursor(18, 12);
   display.print(Vrms, 1);
   display.print("V");
   
-  // Add Firebase status indicator
+  // Add Firebase status
   if (firebaseReady) {
     display.setCursor(100, 12);
     display.print("F");
