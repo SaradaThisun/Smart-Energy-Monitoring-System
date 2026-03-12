@@ -138,11 +138,8 @@ function updateDeviceCards(currentData) {
             const device = devices[deviceId];
             totalDevices++;
             
-            // FIXED: Use the device's online status directly from ESP32
-            // The ESP32 sends 'online: true' in the device object
+            // Use the device's online status for counting
             const isOnline = device.online === true;
-            
-            // Count online devices
             if (isOnline) onlineCount++;
             
             // Use current data for sensor values
@@ -160,15 +157,11 @@ function updateDeviceCards(currentData) {
             const div = document.createElement('div');
             div.className = 'device' + (isOverheating ? ' hot' : (isWarning ? ' warm' : ''));
             
+            // REMOVED: Online badge from the device card
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div>
-                        <h3 style="margin:0; font-size: 22px; font-weight: bold;">${device.name || 'ESP32 Device'}</h3>
-                        <small style="color: #64748b; font-size: 14px;">${deviceId}</small>
-                    </div>
-                    <span class="badge ${isOnline ? 'online' : 'offline'}" style="font-size: 14px; padding: 4px 14px;">
-                        ${isOnline ? 'ONLINE' : 'OFFLINE'}
-                    </span>
+                <div style="margin-bottom: 15px;">
+                    <h3 style="margin:0; font-size: 22px; font-weight: bold;">${device.name || 'ESP32 Device'}</h3>
+                    <small style="color: #64748b; font-size: 14px;">${deviceId}</small>
                 </div>
 
                 <div class="temp-row" style="margin-bottom: 18px;">
@@ -221,9 +214,9 @@ function updateDeviceCards(currentData) {
             deviceList.appendChild(div);
         });
         
-        // Update online count display
+        // Update online count display at the top of the page only
         document.getElementById('cOnline').textContent = onlineCount + ' / ' + totalDevices;
-        console.log(Online devices: ${onlineCount}/${totalDevices});
+        console.log(`Online devices: ${onlineCount}/${totalDevices}`);
     });
 }
 
@@ -289,4 +282,4 @@ function updateBar(kwh) {
     }
 }
 
-console.log("Fixed: Online status now uses device.online directly from ESP32");
+console.log("Fixed: Online status removed from device cards - only shown in top summary");
