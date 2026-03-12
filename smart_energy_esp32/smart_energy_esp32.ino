@@ -65,6 +65,8 @@ bool emergencyShutdown = false;
 unsigned long lastBeepTime = 0;
 int beepPattern = 0;
 
+
+
 // Firebase objects
 FirebaseData fbdo;
 FirebaseAuth auth;
@@ -74,6 +76,9 @@ FirebaseConfig config;
 unsigned long sendDataPrevMillis = 0;
 const long FIREBASE_INTERVAL = 5000; // Send data every 5 seconds
 bool firebaseReady = false;
+
+unsigned long lastControlCheck = 0;
+int powerControl = 1;
 
 // Device ID 
 String deviceID = "esp32_001";
@@ -403,6 +408,20 @@ void loop() {
   // Get status string
   String status = getStatusString(tempC);
 
+
+if (millis() - lastControlCheck > 2000) {
+  lastControlCheck = millis();
+
+  if (Firebase.RTDB.getInt(&fbdo, "/control/power")) {
+    powerControl = fbdo.intData();
+  }
+}
+
+if(powerControl == 0){
+  digitalWrite(RELAY_PIN, LOW);   // RELAY OFF
+}
+else{
+
   // TEMPERATURE SAFETY LOGIC
   if (tempC >= TEMP_CRITICAL_LEVEL || tempC == DEVICE_DISCONNECTED_C) {
     digitalWrite(RELAY_PIN, LOW);
@@ -427,6 +446,7 @@ void loop() {
         delay(200);
       }
     }
+  }
     
     if (!emergencyShutdown) {
       if (Vrms > 200) {
