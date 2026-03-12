@@ -1,4 +1,4 @@
-// ── Firebase Configuration ─────────────────────────────────────────
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAXRuermsU80P5qGt8bVIv7Jg-e8FQ0KxY",
     authDomain: "project-c6ce3.firebaseapp.com",
@@ -13,11 +13,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ── Global Variables ─────────────────────────────────────────────
+// Global Variables
 const labels = [];
 const powers = [];
 
-// ── Chart Configuration ─────────────────────────────────────────────
+// Chart Configuration 
 const chart = new Chart(document.getElementById('myChart'), {
     type: 'line',
     data: {
@@ -51,7 +51,7 @@ const chart = new Chart(document.getElementById('myChart'), {
     }
 });
 
-// ── Helper Functions ─────────────────────────────────────────────
+// Helper Functions
 function calculatePower(voltage, current) {
     return (voltage * current).toFixed(1);
 }
@@ -74,7 +74,7 @@ function addChartPoint(power, timestamp) {
     chart.update();
 }
 
-// ── Listen for data at /current/readings ──
+// Listen for data at /current/readings 
 db.ref('/current/readings').on('value', (snapshot) => {
     const data = snapshot.val();
     console.log("Current readings data:", data);
@@ -117,7 +117,7 @@ db.ref('/current/readings').on('value', (snapshot) => {
     });
 });
 
-// ── Update Device Cards ──
+// Update Device Cards
 function updateDeviceCards(currentData) {
     db.ref('/devices').once('value', (snapshot) => {
         const devices = snapshot.val();
@@ -220,7 +220,7 @@ function updateDeviceCards(currentData) {
     });
 }
 
-// ── Historical Data Listener ──
+// Historical Data Listener 
 db.ref('/realtime_data').orderByKey().limitToLast(100).on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
@@ -283,3 +283,4 @@ function updateBar(kwh) {
 }
 
 console.log("Fixed: Online status removed from device cards - only shown in top summary");
+
